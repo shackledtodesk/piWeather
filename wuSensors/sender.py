@@ -1,8 +1,9 @@
 ## Send data to WU PWS
-import urllib2
+import requests
 import re
 
 wuSoftware = "piPWS0.1"
+maxRetry = 3
 
 def wuTime(inTime):
     wuT = re.match("(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2}).000Z", inTime)
@@ -10,12 +11,19 @@ def wuTime(inTime):
 
 
 def genReq(wuID, wuPass, inTime, wuTemp, wuPress):
+    global wuSoftware
     req = "ID=%s&PASSWORD=%s&dateutc=%s&tempf=%s&baromin=%s&action=updateraw&softwaretype=%s" % \
-          (wuID, wuPass, wuTime(inTime), wuTemp, wuPress, wuSoftware)
-    
+          (wuID, wuPass, wuTime(inTime), wuTemp, wuPress, wuSoftware)    
     return req
 
 def sendReq(URI, req):
-    f = urllib2.urlopen("%s?%s" % (URI, req))
-    return f.read()
-
+    global maxRetry
+    for i in range(1,maxRetry):
+        try:
+            f = requests.get(URI)
+            f.raise_for_status()
+        except HTTPError:
+            sleep 10            
+        else:
+            return "ok: %s" % f.status_code()
+    return "error: %s" % f.status_code()
