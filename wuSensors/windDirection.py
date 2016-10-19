@@ -13,20 +13,23 @@ Input GPIO pins used on Raspberry Pi 3:
 """
 
 from gpiozero import Button
-import time
 
 btn0 = Button(5)
 btn1 = Button(6)
 btn2 = Button(13)
 btn3 = Button(19)
 
-pos = 0
 def vainPositionRaw():
+    global btn0, btn1, btn2, btn3
     ## Bit shifting button presses and OR'ing the result
     return int(btn3.is_pressed) << 3 | int(btn2.is_pressed) << 2 | \
         int(btn1.is_pressed) << 1 | int(btn0.is_pressed)
     
 
 def vainDegrees():
-    return vanPositionRaw * 22.5
+    return vainPositionRaw() * 22.5
 
+if __name__ == '__main__':
+    ## Little bit of testing of functionality
+    print "bit: ", vainPositionRaw()
+    print "degrees: ", vainDegrees()

@@ -74,9 +74,6 @@ def readBME280All(addr=DEVICE):
 
   bus.write_byte_data(addr, REG_CONTROL, control)
 
-  #print bus.read_i2c_block_data(addr, REG_HUM_MSB, 8)
-  #print bus.read_i2c_block_data(addr, REG_HUM_LSB, 8)
-  
   # Read blocks of calibration data from EEPROM
   # See Page 22 data sheet
   cal1 = bus.read_i2c_block_data(addr, 0x88, 24)
@@ -161,7 +158,7 @@ def main():
 
   temperature,pressure,humidity = readBME280All()
 
-  print temperature,  pressure, humidity, data
+  print temperature,  pressure, humidity
   print "Temperature : ", temperature, "C, ", (temperature * 1.8) + 32, "F"
   print "Pressure : ", pressure, "hPa"
   print "Humidity : ", humidity, "%"

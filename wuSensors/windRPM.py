@@ -28,20 +28,27 @@ def rotationCount():
     elapsed = (time.time() - start_time) / magnets
     start_time = time.time()
 
-def calcRPM():
-    global rotations, start_time, elapsed, rpm
-    if elapsed != 0:
-        rpm = 1 / elapsed * 60
+def calcRPM(dTime = 0):
+    global rotations, start_time, rpm
+    if dTime != 0:
+        rpm = 1 / dTime * 60
     return rpm
 
-def calcKPH():
+def calcKPH(dTime = 0):
+    global radius
     rpm = calcRPM()
-    circCM = (2 * math.pi) * radius
-    distKM = circCM / 10000
-    return distKM / elasped * 3600
+    if dTime != 0:
+        circCM = (2 * math.pi) * radius
+        distKM = circCM / 10000
+        kph = distKM / dTime * 3600
+    else:
+        kph = 0
+    return kph
 
-def calcMPH():
-    return calcKPH() * 0.621371    
+def calcMPH(dTime = 0):
+    mph = calcKPH(dTime) * 0.621371
+    return mph
+    
 
 def initButton():
     global start_time
@@ -49,9 +56,8 @@ def initButton():
     btn0.when_pressed = rotationCount
 
 if __name__ == '__main__':
+    ## Here just to test functionality
     initButton()
-    sleep = 5
-    while True:
-        time.sleep(sleep)
-        print "rpm: ", calcRPM(), " pulses: ", rotations, " mph: ", calcMPH()
+    time.sleep(5)
+    print "rpm: ", calcRPM(elapsed), " pulses: ", rotations, " mph: ", calcMPH(elapsed)
     
