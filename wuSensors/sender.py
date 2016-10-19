@@ -1,4 +1,5 @@
 ## Send data to WU PWS
+from time import sleep
 import requests
 import re
 
@@ -19,11 +20,9 @@ def genReq(wuID, wuPass, inTime, wuTemp, wuPress):
 def sendReq(URI, req):
     global maxRetry
     for i in range(1,maxRetry):
-        try:
-            f = requests.get(URI)
-            f.raise_for_status()
-        except HTTPError:
-            sleep 10            
+        f = requests.get(URI)
+        if f.status_code == requests.codes.ok:
+            return "ok: %d" % f.status_code
         else:
-            return "ok: %s" % f.status_code()
-    return "error: %s" % f.status_code()
+            sleep(10)
+    return "error: %d" % f.status_code
