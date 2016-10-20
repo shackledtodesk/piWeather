@@ -20,9 +20,9 @@ def genReq(wuID, wuPass, inTime, wuTemp, wuPress):
 def sendReq(URI, req):
     global maxRetry
     for i in range(1,maxRetry):
-        f = requests.get(URI)
+        f = requests.get("%s?%s" % (URI, req))
         if f.status_code == requests.codes.ok:
             return "ok: %d" % f.status_code
         else:
             sleep(10)
-    return "error: %d" % f.status_code
+    return "error: %d - %s" % (f.status_code, f.text)

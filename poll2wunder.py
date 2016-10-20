@@ -10,7 +10,7 @@ from wuSensors import sender
 wuStation = "KCASANCA52"
 wuPassword = "gzcdi8f0"
 wuURI = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
-pollTime = 5 ## seconds
+pollTime = 20 ## seconds
 gpsd = None
 
 class weatherPoller(threading.Thread):
