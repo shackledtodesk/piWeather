@@ -1,4 +1,24 @@
 ## Send data to WU PWS
+## RapidFire Server does a GET
+## 
+## usage
+## action [action = updateraw]
+## ID [ID as registered by wunderground.com]
+## PASSWORD [PASSWORD registered with this ID]
+## dateutc - [YYYY-MM-DD HH:MM:SS (mysql format)]
+## winddir - [0-360]
+## windspeedmph - [mph]
+## windgustmph - [windgustmph ]
+## humidity - [%]
+## tempf - [temperature F]
+## rainin - [rain in]
+## dailyrainin - [daily rain in accumulated]
+## baromin - [barom in]
+## dewptf- [dewpoint F]
+## weather - [text] -- metar style (+RA) 
+## clouds - [text] -- SKC, FEW, SCT, BKN, OVC
+## softwaretype - [text] ie: vws or weatherdisplay
+
 from time import sleep
 import requests
 import re
