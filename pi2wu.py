@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 import os
+import sys
+import argparse
 import time
 import threading
 import logging
@@ -10,8 +12,15 @@ from gps import *
 from piSensors import bmp280
 from piWriters import wuSender
 
+######## cmd line args
+parser = argparse.ArgumentParser(description='RaspberryPi to WeatherUndergroun application.')
+parser.add_argument('--config', default='pi2wu.cfg', help='Configuration file to use. (default=pi2wu.cfg)')
+parser.add_argument('--quiet', action='store_true', help='Run quiet.  Do not display output.')
+args = parser.parse_args()
+
+######## get config
 cParser = SafeConfigParser()
-cParser.read('pi2wu.cfg')
+cParser.read(args.config)
 
 ## WeatherUnderground Options
 wuStation = cParser.get('wunderground','station')
@@ -43,31 +52,45 @@ class weatherPoller(threading.Thread):
       gpsd.next() 
 
 
+def displayMeasurements(utcdate, data):
+  print "clock: ", utcdate
+  for mName, value in data.items():
+    print mName, ": ", value
+  
 ## Init...
 #logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
 #                    level=logging.DEBUG)
-logger = logging.getLogger("p2wu")
+logger = logging.getLogger("pi2wu")
 logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler('p2wu.log')
+fh = logging.FileHandler('pi2wu.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 
 logger.debug("Starting up.")
 weatherp = weatherPoller()
+tph = bmp280.bmp280()
 try:
     weatherp.start()
     while True:
         #It may take a second or two to get good data
         #print gpsd.fix.latitude,', ',gpsd.fix.longitude,'  Time: ',gpsd.utc
         
-        temperature,pressure,humidity = bmp280.readBME280All()
+        temperature,pressure,humidity = tph.readBME280All()
         if (gpsd.fix.mode == 3):
-            req = sender.genReq(wuStation, wuPassword, gpsd.utc, (temperature * 1.8) + 32, pressure * 0.029529988)
-            logger.debug("values:  %s" % req)
+          req = sender.genReq(wuStation, wuPassword, gpsd.utc, (temperature * 1.8) + 32, pressure * 0.029529988)
+          logger.debug("values:  %s" % req)
+
+          if not args.quiet:
+            displayMeasurements(gpsd.utc, { "temp": temperature, "pressure": pressure })
+          
+          try:
             logger.debug("Sending to WU: %s " % sender.sendReq(wuURI, req))
+          except:
+            e = sys.exc_info()[0]
+            logger.debug(e)
         else:
-            logger.debug("Not sending yet.  GPS mode: %s", gpsd.fix.mode)
+          logger.debug("Not sending yet.  GPS mode: %s", gpsd.fix.mode)
             
         time.sleep(pollTime) #set to whatever
         
