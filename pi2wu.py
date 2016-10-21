@@ -6,8 +6,9 @@ import threading
 import logging
 from ConfigParser import SafeConfigParser
 from gps import *
-from wuSensors import bmp280
-from wuSensors import sender
+
+from piSensors import bmp280
+from piWriters import wuSender
 
 cParser = SafeConfigParser()
 cParser.read('pi2wu.cfg')
