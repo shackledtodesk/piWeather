@@ -4,14 +4,28 @@ import os
 import time
 import threading
 import logging
+from ConfigParser import SafeConfigParser
 from gps import *
 from wuSensors import bmp280
 from wuSensors import sender
 
-wuStation = "KCASANCA52"
-wuPassword = "gzcdi8f0"
-wuURI = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
-pollTime = 5 ## seconds
+cParser = SafeConfigParser()
+cParser.read('pi2wu.cfg')
+
+## WeatherUnderground Options
+wuStation = cParser.get('wunderground','station')
+wuPassword = cParser.get('wunderground','password')
+
+if cParser.has_option('wunderground','uri'):
+  wuURI = cParser.get('wunderground','uri')
+else:
+  wuURI = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+
+
+## Sensors to Use Options
+sensorPack = json.loads(cParser.get('sensors', 'sensors'))
+
+pollTime = 10 ## seconds
 gpsd = None
 
 class weatherPoller(threading.Thread):
@@ -25,7 +39,7 @@ class weatherPoller(threading.Thread):
   def run(self):
     global gpsd
     while weatherp.running:
-      gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
+      gpsd.next() 
 
 
 ## Init...
