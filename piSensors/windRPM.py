@@ -8,56 +8,55 @@ With 4 magnets means a count of 4 == 1 rotation
 """
 
 from gpiozero import Button
-import time, math
+import time, math, json
 
-btn0 = Button(26)
-magnets = 4
-radius = 2.0 ## radius in centimeters
-rotations = 0
-elapsed = 0
-start_time = 0
-rpm = 0
+class windRPM:
+    btn0 = Button(26)
+    magnets = 4
+    radius = 2.0 ## radius in centimeters
+    rotations = 0
+    elapsed = 0
+    start_time = 0
+    rpm = 0
 
-def rotationCount():
-    global rotations, start_time, elapsed, magnets
+    def __init__(self):
+        self.start_time = time.time()
+        self.btn0.when_pressed = self.rotationCount
 
-    if magnets == 0:
-        magnets = 1
+    def rotationCount(self):
+        if self.magnets == 0:
+            self.magnets = 1
 
-    rotations += 1
-    elapsed = (time.time() - start_time) / magnets
-    start_time = time.time()
+        self.rotations += 1
+        self.elapsed = (time.time() - self.start_time) / self.magnets
+        self.start_time = time.time()
 
-def calcRPM(dTime = 0):
-    global rotations, start_time, rpm
-    if dTime != 0:
-        rpm = 1 / dTime * 60
-    return rpm
+        def calcRPM(self):
+            if self.elapsed != 0:
+                self.rpm = 1 / self.elapsed * 60
+            return self.rpm
 
-def calcKPH(dTime = 0):
-    global radius
-    rpm = calcRPM()
-    if dTime != 0:
-        circCM = (2 * math.pi) * radius
-        distKM = circCM / 10000
-        kph = distKM / dTime * 3600
-    else:
-        kph = 0
-    return kph
+        def calcKPH(self):
+            self.rpm = self.calcRPM()
+            if self.elapsed != 0:
+                circCM = (2 * math.pi) * self.radius
+                distKM = circCM / 10000
+                kph = distKM / self.elapsed * 3600
+            else:
+                kph = 0
+            return kph
 
-def calcMPH(dTime = 0):
-    mph = calcKPH(dTime) * 0.621371
-    return mph
+        def calcMPH(self):
+            mph = calcKPH() * 0.621371
+            return mph
     
 
-def initButton():
-    global start_time
-    start_time = time.time()
-    btn0.when_pressed = rotationCount
+        def getMeasurement(self):
+            resp = "{ 'windspeedmph': %s }" % self.calcMPH
 
 if __name__ == '__main__':
     ## Here just to test functionality
-    initButton()
+    wRPM = windRPM
     time.sleep(5)
-    print "rpm: ", calcRPM(elapsed), " pulses: ", rotations, " mph: ", calcMPH(elapsed)
+    print "rpm: ", wRPM.calcRPM(), " pulses: ", wRPM.rotations, " mph: ", wRPM.calcMPH()
     
