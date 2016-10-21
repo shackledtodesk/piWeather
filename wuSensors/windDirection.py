@@ -12,24 +12,38 @@ Input GPIO pins used on Raspberry Pi 3:
    05 (pin 29, 2^0), 06 (pin 31, 2^1), 13 (pin 33, 2^2), 19 (pin 35, 2^3) 
 """
 
+import json
 from gpiozero import Button
 
-btn0 = Button(5)
-btn1 = Button(6)
-btn2 = Button(13)
-btn3 = Button(19)
+class windDirection:
 
-def vainPositionRaw():
-    global btn0, btn1, btn2, btn3
-    ## Bit shifting button presses and OR'ing the result
-    return int(btn3.is_pressed) << 3 | int(btn2.is_pressed) << 2 | \
-        int(btn1.is_pressed) << 1 | int(btn0.is_pressed)
+    btn0 = Button(5)
+    btn1 = Button(6)
+    btn2 = Button(13)
+    btn3 = Button(19)
+
+    def __init__(self):
+        None
+    
+    def vainPositionRaw(self):
+        ## global btn0, btn1, btn2, btn3
+        ## Bit shifting button presses and OR'ing the result
+        return int(self.btn3.is_pressed) << 3 | \
+            int(self.btn2.is_pressed) << 2 | \
+            int(self.btn1.is_pressed) << 1 | \
+            int(self.btn0.is_pressed)
     
 
-def vainDegrees():
-    return vainPositionRaw() * 22.5
+    def vainDegrees(self):
+        return self.vainPositionRaw() * 22.5
+
+    def getMeasurement(self):
+        resp = "{ 'winddir': %s }" % self.vainDegrees()
+        return json.dumps(resp)
 
 if __name__ == '__main__':
     ## Little bit of testing of functionality
-    print "bit: ", vainPositionRaw()
-    print "degrees: ", vainDegrees()
+    sensor = windDirection()
+    print "bit: ", sensor.vainPositionRaw()
+    print "degrees: ", sensor.vainDegrees()
+    print sensor.getMeasurement()
