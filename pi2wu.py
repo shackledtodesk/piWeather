@@ -70,6 +70,7 @@ logger.addHandler(fh)
 logger.debug("Starting up.")
 weatherp = weatherPoller()
 tph = bmp280.bmp280()
+snd = wuSender.wuSender()
 try:
     weatherp.start()
     while True:
@@ -78,14 +79,14 @@ try:
         
         temperature,pressure,humidity = tph.readBME280All()
         if (gpsd.fix.mode == 3):
-          req = sender.genReq(wuStation, wuPassword, gpsd.utc, (temperature * 1.8) + 32, pressure * 0.029529988)
+          req = snd.genReq(wuStation, wuPassword, gpsd.utc, (temperature * 1.8) + 32, pressure * 0.029529988)
           logger.debug("values:  %s" % req)
 
           if not args.quiet:
             displayMeasurements(gpsd.utc, { "temp": temperature, "pressure": pressure })
           
           try:
-            logger.debug("Sending to WU: %s " % sender.sendReq(wuURI, req))
+            logger.debug("Sending to WU: %s " % snd.sendReq(wuURI, req))
           except:
             e = sys.exc_info()[0]
             logger.debug(e)

@@ -23,32 +23,36 @@ from time import sleep
 import requests
 import re
 
-wuSoftware = "piPWS0.1"
-maxRetry = 3
+class wuSender:
 
-def wuTime(inTime):
-    wuT = re.match("(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2}).000Z", inTime)
-    return "%s+%s%%3A%s%%3A%s" % (wuT.group(1, 2, 3, 4))
+    wuSoftware = "piPWS0.1"
+    maxRetry = 3
 
+    def __init__(self):
+        None
 
-def genReq(wuID, wuPass, inTime, wuTemp, wuPress):
-    global wuSoftware
-    req = "ID=%s&PASSWORD=%s&dateutc=%s&tempf=%s&baromin=%s&action=updateraw&softwaretype=%s" % \
-          (wuID, wuPass, wuTime(inTime), wuTemp, wuPress, wuSoftware)    
-    return req
+        
+    def wuTime(self, inTime):
+        wuT = re.match("(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2}).000Z", inTime)
+        return "%s+%s%%3A%s%%3A%s" % (wuT.group(1, 2, 3, 4))
 
-def sendReq(URI, req):
-    global maxRetry
-    for i in range(1,maxRetry):
-        try:
-            f = requests.get("%s?%s" % (URI, req))
-            if f.status_code == requests.codes.ok:
-                return "ok: %d" % f.status_code
+    def genReq(self, wuID, wuPass, inTime, wuTemp, wuPress):
+        req = "ID=%s&PASSWORD=%s&dateutc=%s&tempf=%s&baromin=%s&action=updateraw&softwaretype=%s" % \
+              (wuID, wuPass, self.wuTime(inTime), wuTemp, wuPress, self.wuSoftware)    
+        return req
+
+    def sendReq(self, URI, req):
+        for i in range(0,self.maxRetry):
+            try:
+                f = requests.get("%s?%s" % (URI, req))
+                if f.status_code == requests.codes.ok:
+                    return "ok: %d" % f.status_code
+                else:
+                    sleep(10)
+            except:
+                e = sys.exc_info()[0]
+                logger.debug(e)
             else:
                 sleep(10)
-        except:
-            e = sys.exc_info()[0]
-            logger.debug(e)
-        else:
-            sleep(10)
-    return "error: %d - %s" % (f.status_code, f.text)
+        return "error: %d - %s" % (f.status_code, f.text)
+
