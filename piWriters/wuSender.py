@@ -36,9 +36,11 @@ class wuSender:
         wuT = re.match("(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2}).000Z", inTime)
         return "%s+%s%%3A%s%%3A%s" % (wuT.group(1, 2, 3, 4))
 
-    def genReq(self, wuID, wuPass, inTime, wuTemp, wuPress):
-        req = "ID=%s&PASSWORD=%s&dateutc=%s&tempf=%s&baromin=%s&action=updateraw&softwaretype=%s" % \
-              (wuID, wuPass, self.wuTime(inTime), wuTemp, wuPress, self.wuSoftware)    
+    def genReq(self, wuID, wuPass, inTime, data):
+        req = "ID=%s&PASSWORD=%s&dateutc=%s&action=updateraw&softwaretype=%s" % \
+              (wuID, wuPass, self.wuTime(inTime),self.wuSoftware)
+        for desc, val in data.items():
+            req = "%s&%s=%s" % (req, desc, val)
         return req
 
     def sendReq(self, URI, req):

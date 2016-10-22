@@ -15,7 +15,7 @@ Input GPIO pins used on Raspberry Pi 3:
 import json
 from gpiozero import Button
 
-class windDirection:
+class sensor:
 
     btn0 = Button(5)
     btn1 = Button(6)
@@ -38,12 +38,13 @@ class windDirection:
         return self.vainPositionRaw() * 22.5
 
     def getMeasurement(self):
-        resp = "{ 'winddir': %s }" % self.vainDegrees()
-        return json.dumps(resp)
+        resp = {}
+        resp['winddir'] = self.vainDegrees()
+        return resp
 
 if __name__ == '__main__':
     ## Little bit of testing of functionality
-    sensor = windDirection()
-    print "bit: ", sensor.vainPositionRaw()
-    print "degrees: ", sensor.vainDegrees()
-    print sensor.getMeasurement()
+    snsr = sensor()
+    print "bit: ", snsr.vainPositionRaw()
+    print "degrees: ", snsr.vainDegrees()
+    print snsr.getMeasurement()

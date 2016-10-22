@@ -10,7 +10,7 @@ With 4 magnets means a count of 4 == 1 rotation
 from gpiozero import Button
 import time, math, json
 
-class windRPM:
+class sensor:
     btn0 = Button(26)
     magnets = 4
     radius = 2.0 ## radius in centimeters
@@ -23,6 +23,13 @@ class windRPM:
         self.start_time = time.time()
         self.btn0.when_pressed = self.rotationCount
 
+    def calc_rpm(self):
+        if self.elapsed != 0:
+            self.rpm = 1 / self.elapsed * 60
+        else:
+            self.rpm = 0
+        return self.rpm
+            
     def rotationCount(self):
         if self.magnets == 0:
             self.magnets = 1
@@ -30,33 +37,30 @@ class windRPM:
         self.rotations += 1
         self.elapsed = (time.time() - self.start_time) / self.magnets
         self.start_time = time.time()
+        
+    def calcKPH(self):
+        self.rpm = self.calc_rpm()
+        if self.elapsed != 0:
+            circCM = (2 * math.pi) * self.radius
+            distKM = circCM / 10000
+            kph = distKM / self.elapsed * 3600
+        else:
+            kph = 0
+        return kph
 
-        def calcRPM(self):
-            if self.elapsed != 0:
-                self.rpm = 1 / self.elapsed * 60
-            return self.rpm
-
-        def calcKPH(self):
-            self.rpm = self.calcRPM()
-            if self.elapsed != 0:
-                circCM = (2 * math.pi) * self.radius
-                distKM = circCM / 10000
-                kph = distKM / self.elapsed * 3600
-            else:
-                kph = 0
-            return kph
-
-        def calcMPH(self):
-            mph = calcKPH() * 0.621371
-            return mph
+    def calcMPH(self):
+        mph = self.calcKPH() * 0.621371
+        return mph    
     
-
-        def getMeasurement(self):
-            resp = "{ 'windspeedmph': %s }" % self.calcMPH
+    def getMeasurement(self):
+        resp = {}
+        resp['windspeedmph'] = self.calcMPH()
+        return resp
 
 if __name__ == '__main__':
     ## Here just to test functionality
-    wRPM = windRPM
+    wRPM = sensor()
     time.sleep(5)
-    print "rpm: ", wRPM.calcRPM(), " pulses: ", wRPM.rotations, " mph: ", wRPM.calcMPH()
+    print "rpm: ", wRPM.calc_rpm(), " pulses: ", wRPM.rotations, " kph: ", wRPM.calcKPH()
+    print wRPM.getMeasurement()
     

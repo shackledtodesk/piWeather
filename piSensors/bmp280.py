@@ -16,7 +16,7 @@ from ctypes import c_short
 from ctypes import c_byte
 from ctypes import c_ubyte
 
-class bmp280:
+class sensor:
   DEVICE = 0x76 # Default device I2C address
   bus = smbus.SMBus(1) # Rev 2 Pi, Pi 2 & Pi 3 uses bus 1
   # Rev 1 Pi uses bus 0
@@ -47,7 +47,7 @@ class bmp280:
   def readBME280ID(self, addr=DEVICE):
     # Chip ID Register Address
     REG_ID     = 0xD0
-    (chip_id, chip_version) = bmp280.bus.read_i2c_block_data(addr, REG_ID, 2)
+    (chip_id, chip_version) = self.bus.read_i2c_block_data(addr, REG_ID, 2)
     return chip_id, chip_version
 
   def readBME280All(self, addr=DEVICE):
@@ -66,15 +66,15 @@ class bmp280:
     MODE = 1
 
     control = OVERSAMPLE_TEMP<<5 | OVERSAMPLE_PRES<<2 | MODE
-    bmp280.bus.write_byte_data(addr, 0xF2, 1)
+    self.bus.write_byte_data(addr, 0xF2, 1)
     
-    bmp280.bus.write_byte_data(addr, REG_CONTROL, control)
+    self.bus.write_byte_data(addr, REG_CONTROL, control)
     
     # Read blocks of calibration data from EEPROM
     # See Page 22 data sheet
-    cal1 = bmp280.bus.read_i2c_block_data(addr, 0x88, 24)
-    cal2 = bmp280.bus.read_i2c_block_data(addr, 0xA1, 1)
-    cal3 = bmp280.bus.read_i2c_block_data(addr, 0xE1, 7)
+    cal1 = self.bus.read_i2c_block_data(addr, 0x88, 24)
+    cal2 = self.bus.read_i2c_block_data(addr, 0xA1, 1)
+    cal3 = self.bus.read_i2c_block_data(addr, 0xE1, 7)
 
     # Convert byte data to word values
     dig_T1 = self.getUShort(cal1, 0)
@@ -106,7 +106,7 @@ class bmp280:
     dig_H6 = self.getChar(cal3, 6)
     
     # Read temperature/pressure/humidity
-    data = bmp280.bus.read_i2c_block_data(addr, REG_DATA, 8)
+    data = self.bus.read_i2c_block_data(addr, REG_DATA, 8)
     pres_raw = (data[0] << 12) | (data[1] << 4) | (data[2] >> 4)
     temp_raw = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4)
     hum_raw = (data[6] << 8) | data[7]
@@ -147,27 +147,28 @@ class bmp280:
     return temperature/100.0,pressure/100.0,humidity
 
   def getMeasurement(self):
-    chipId, chipVersion = self.readBME280ID()
+    ## chipId, chipVersion = self.readBME280ID()
+    res = {}
     temperature,pressure,humidity = self.readBME280All()
 
-    resp = "{ 'chip_id': '%s', 'chip_version': '%s', 'tempf': '%s', 'barmin': '%s' }" % (chipId, chipVersion, temperature, pressure)
-    
-    return json.dumps(resp)
+    resp = { 'tempf': (temperature * 1.8) + 32,
+             'baromin': pressure* 0.029529988 }
+    return resp
     
 def main():
-  sensor = bmp280()
+  snsr = sensor()
   
-  chip_id, chip_version = sensor.readBME280ID()
+  chip_id, chip_version = snsr.readBME280ID()
   print "Chip ID     :", chip_id
   print "Version     :", chip_version
 
-  temperature,pressure,humidity = sensor.readBME280All()
+  temperature,pressure,humidity = snsr.readBME280All()
 
   print temperature,  pressure, humidity
   print "Temperature : ", temperature, "C, ", (temperature * 1.8) + 32, "F"
   print "Pressure : ", pressure, "hPa"
   print "Humidity : ", humidity, "%"
-  print sensor.getMeasurement()
+  print snsr.getMeasurement()
 
 if __name__=="__main__":
   main()
