@@ -24,36 +24,44 @@ import requests
 import re
 
 class wuSender:
-
+    uri = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+    station = None
+    password = None
     wuSoftware = "piPWS0.1"
     maxRetry = 3
 
-    def __init__(self):
-        None
-
-        
+    def __init__(self, config):
+        self.station = config.get('wunderground','station')
+        self.password = config.get('wunderground','password')
+        if config.has_option('wunderground','uri'):
+            self.uri = config.get('wunderground','uri')
+        if config.has_option('wunderground', 'retry'):
+            self.maxRetry = config.get('wunderground','retry')
+            
     def wuTime(self, inTime):
         wuT = re.match("(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2}).000Z", inTime)
         return "%s+%s%%3A%s%%3A%s" % (wuT.group(1, 2, 3, 4))
 
-    def genReq(self, wuID, wuPass, inTime, data):
+    def genReq(self, inTime, data):
         req = "ID=%s&PASSWORD=%s&dateutc=%s&action=updateraw&softwaretype=%s" % \
-              (wuID, wuPass, self.wuTime(inTime),self.wuSoftware)
+              (self.station, self.password , self.wuTime(inTime), self.wuSoftware)
         for desc, val in data.items():
             req = "%s&%s=%s" % (req, desc, val)
         return req
 
-    def sendReq(self, URI, req):
+    def sendReq(self, req):
         for i in range(0,self.maxRetry):
             try:
-                f = requests.get("%s?%s" % (URI, req))
+                f = requests.get("%s?%s" % (self.uri, req))
                 if f.status_code == requests.codes.ok:
                     return "ok: %d" % f.status_code
                 else:
                     sleep(10)
-            except:
+            except (KeyboardInterrupt, SystemExit):
+                return
+            except Exception:
                 e = sys.exc_info()[0]
-                logger.debug(e)
+                traceback.print_exc(file=sys.stdout)                
             else:
                 sleep(10)
         return "error: %d - %s" % (f.status_code, f.text)

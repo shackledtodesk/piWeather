@@ -2,13 +2,13 @@
 
 import os
 import sys
+import signal
 import argparse
 import time
 import threading
 import logging
 import importlib
 import json
-
 from ConfigParser import SafeConfigParser
 
 ######## cmd line args
@@ -23,21 +23,14 @@ args = parser.parse_args()
 cParser = SafeConfigParser()
 cParser.read(args.config)
 
-## WeatherUnderground Options
-wuStation = cParser.get('wunderground','station')
-wuPassword = cParser.get('wunderground','password')
-
-if cParser.has_option('wunderground','uri'):
-  wuURI = cParser.get('wunderground','uri')
-else:
-  wuURI = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
-
 logger = logging.getLogger("pi2wu")
 logger.setLevel(logging.DEBUG)
 fh = logging.FileHandler('pi2wu.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
+
+pollTime = float(cParser.get('general', 'pollFrequency'))  ## seconds
 
 ## Sensors to Use Options
 sensorPack = json.loads(cParser.get('sensors', 'sensors'))
@@ -50,7 +43,8 @@ for snsr in sensorPack:
   thing = importlib.import_module(loadMe)
   snsrPack[snsr] = thing.sensor()
 
-pollTime = float(cParser.get('general', 'pollFrequency'))  ## seconds
+from piWriters import wuSender
+snd = wuSender.wuSender(cParser)
 
 def displayMeasurements(utcdate, data):
   print "clock: ", utcdate
@@ -68,43 +62,52 @@ def pollSensors(sensors):
     results.update(ting)
 
   return results
-    
+
+
+def signal_handler(signum, frame):
+  logger.debug("Caught signal: %s", signum)
+  print "caught signal:", signum
+  sys.exit(0)
+signal.signal(signal.SIGTERM,signal_handler)
+signal.signal(signal.SIGINT,signal_handler)
+
 ###########################################
 ## Init...
-#logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-#                    level=logging.DEBUG)
-
 logger.debug("Starting up.")
-
-from piWriters import wuSender
-snd = wuSender.wuSender()
 
 ## Which method of getting UTC time do we use.
 if cParser.get('general', 'timing') == "gpsd":
+  logger.debug("Loading gps timing module")
   from piWriters import gpsd
   cTime = gpsd.gpsdTime()
+  cTime.start()  
 else:
+  logger.debug("Using local machine clock for UTC.")
   from piWriters import localTime
   cTime = localTime.localTime()
   
 while True:
-  snsrReturn = pollSensors(snsrPack)
-  timeCheck = cTime.getTime()
-  req = snd.genReq(wuStation, wuPassword, timeCheck, snsrReturn)
-  logger.debug("values:  %s" % req)
-
   try:
-    resp = snd.sendReq(wuURI, req)
-    logger.debug("Sending to WU: %s" % resp)
-    if not args.quiet:
-      print "Sent to WU with response: %s" % resp
-      displayMeasurements(timeCheck, snsrReturn)
-  except:
-    e = sys.exc_info()[0]
-    logger.debug(e)
+    snsrReturn = pollSensors(snsrPack)
+    timeCheck = cTime.getTime()
+    req = snd.genReq(timeCheck, snsrReturn)
+    logger.debug("values:  %s" % req)
+    
+    try:
+      resp = snd.sendReq(req)
+      logger.debug("Sending to WU: %s" % resp)
+      if not args.quiet:
+        print "Sent to WU with response: %s" % resp
+        displayMeasurements(timeCheck, snsrReturn)
+    except Exception:
+      e = sys.exc_info()[0]
+      logger.debug(e)
 
-  print "poll time: %f" % pollTime
-  time.sleep(pollTime)
-        
-logger.debug("Done.  Exiting.")
-                  
+    if not args.quiet:
+      print "Waiting..."
+    time.sleep(pollTime)
+      
+  except (KeyboardInterrupt, SystemExit):
+    cTime.stop()
+    logger.debug("Done.  Exiting.")
+    break
