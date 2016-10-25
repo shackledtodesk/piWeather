@@ -1,6 +1,7 @@
 ## Send data to a Graphite/Carbon Server
 
-import sys, time, socket
+import traceback
+import sys, time, socket, datetime
 from datetime import datetime
 
 class piSender:
@@ -24,7 +25,7 @@ class piSender:
 
 
     def genReq(self, inTime, data):
-        epoch_time = time.mktime(strptime(inTime, "%Y-%m-%d %H:%M:%s").timetuple())
+        epoch_time = time.mktime(datetime.strptime(inTime, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
         lines = []
         for name, value in data.items():
             lines.append("%s.%s %s %d" %
@@ -34,8 +35,9 @@ class piSender:
 
     def sendReq(self, req):
         try:
-            self.sock.sendall(message)
+            self.sock.sendall(req)
         except Exception:
+            traceback.print_exc()
             e = sys.exc_info()[0]
             return e
         else:

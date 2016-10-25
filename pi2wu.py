@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+import traceback
 import os
 import sys
 import signal
@@ -71,6 +71,26 @@ def pollSensors(sensors):
 
   return results
 
+def sendWeather(senders, utc_time, results):
+  global args
+
+  logger.debug("Entering sendWeather")
+  for snd, obj in senders.items():
+    req = obj.genReq(utc_time, results)
+    logger.debug("%s values:  %s" % (snd, req))
+    
+    try:
+      resp = obj.sendReq(req)
+      logger.debug("Sending to %s: %s" % (snd, resp))
+      if not args.quiet:
+        print "Sent to %s with response: %s" % (snd, resp)
+    except AttributeError:
+          traceback.print_exc()
+    except Exception:
+      e = sys.exc_info()[0]
+      logger.debug("send to %s error" % snd)
+      logger.debug(e)
+      
 
 def signal_handler(signum, frame):
   logger.debug("Caught signal: %s", signum)
@@ -102,20 +122,8 @@ while True:
     if not args.quiet:
       displayMeasurements(timeCheck, snsrReturn)
 
-    for snd, obj in sndrs.items():
-      req = obj.genReq(timeCheck, snsrReturn)
-      logger.debug("%s values:  %s" % (snd, req))
+    sendWeather(sndrs, timeCheck, snsrReturn)
     
-      try:
-        resp = snd.sendReq(req)
-        logger.debug("Sending to %s: %s" % (snd, resp))
-        if not args.quiet:
-          print "Sent to %s with response: %s" % (snd, resp)
-
-      except Exception:
-        e = sys.exc_info()[0]
-        logger.debug(e)
-        
     if not args.quiet:
       print "Waiting..."
     time.sleep(pollTime)
