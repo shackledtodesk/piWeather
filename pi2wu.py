@@ -43,8 +43,16 @@ for snsr in sensorPack:
   thing = importlib.import_module(loadMe)
   snsrPack[snsr] = thing.sensor()
 
-from piWriters import wuSender
-snd = wuSender.wuSender(cParser)
+## Senders of our data
+sndrPack = json.loads(cParser.get('general','sender'))
+sndrs = {}
+for sndr in sndrPack:
+  logger.debug("loading sender: %s" % sndr)
+  if not args.quiet:
+    print "loading sender: %s" % sndr
+  loadMe = "piWriters.%s" % sndr
+  thing = importlib.import_module(loadMe)
+  sndrs[sndr] = thing.piSender(cParser)
 
 def displayMeasurements(utcdate, data):
   print "clock: ", utcdate
@@ -90,19 +98,24 @@ while True:
   try:
     snsrReturn = pollSensors(snsrPack)
     timeCheck = cTime.getTime()
-    req = snd.genReq(timeCheck, snsrReturn)
-    logger.debug("values:  %s" % req)
-    
-    try:
-      resp = snd.sendReq(req)
-      logger.debug("Sending to WU: %s" % resp)
-      if not args.quiet:
-        print "Sent to WU with response: %s" % resp
-        displayMeasurements(timeCheck, snsrReturn)
-    except Exception:
-      e = sys.exc_info()[0]
-      logger.debug(e)
 
+    if not args.quiet:
+      displayMeasurements(timeCheck, snsrReturn)
+
+    for snd, obj in sndrs.items():
+      req = obj.genReq(timeCheck, snsrReturn)
+      logger.debug("%s values:  %s" % (snd, req))
+    
+      try:
+        resp = snd.sendReq(req)
+        logger.debug("Sending to %s: %s" % (snd, resp))
+        if not args.quiet:
+          print "Sent to %s with response: %s" % (snd, resp)
+
+      except Exception:
+        e = sys.exc_info()[0]
+        logger.debug(e)
+        
     if not args.quiet:
       print "Waiting..."
     time.sleep(pollTime)

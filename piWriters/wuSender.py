@@ -23,7 +23,7 @@ from time import sleep
 import requests
 import re
 
-class wuSender:
+class piSender:
     uri = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
     station = None
     password = None
