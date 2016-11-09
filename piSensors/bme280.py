@@ -144,14 +144,20 @@ class sensor:
     elif humidity < 0:
       humidity = 0
 
-    return temperature/100.0,pressure/100.0,humidity
+    ## Td(Celsius) = (humidity/100)^0.125 * (112 + 0.9Temp) + 0.1(Temp) - 112
+    dewpoint = (humidity / 100) ** 0.125 * \
+               (112 + (0.9 * (temperature/100.0))) + \
+               (0.1 * (temperature/100.0)) - 112
+    
+    return temperature/100.0,pressure/100.0,humidity,dewpoint
 
   def getMeasurement(self):
     resp = {}
-    temperature,pressure,humidity = self.readBME280All()
+    temperature,pressure,humidity,dewpoint = self.readBME280All()
     resp = { 'tempf': (temperature * 1.8) + 32,
+             'dewptf': (dewpoint * 1.8) + 32,
              'humidity': humidity,
-             'baromin': pressure* 0.029529988 }
+             'baromin': (pressure * 0.029529988) }
     
     return resp
     
@@ -162,10 +168,11 @@ def main():
   print "Chip ID     :", chip_id
   print "Version     :", chip_version
 
-  temperature,pressure,humidity = snsr.readBME280All()
+  temperature,pressure,humidity,dewpoint = snsr.readBME280All()
 
-  print temperature,  pressure, humidity
+  print temperature,  pressure, humidity, dewpoint
   print "Temperature : ", temperature, "C, ", (temperature * 1.8) + 32, "F"
+  print "Dewpoint : ", dewpoint, "C, ", (dewpoint * 1.8) + 32, "F"
   print "Pressure : ", pressure, "hPa"
   print "Humidity : ", humidity, "%"
   print snsr.getMeasurement()
