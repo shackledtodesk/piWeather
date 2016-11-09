@@ -6,7 +6,7 @@ class localTime:
     
   def getTime(self):
     now = datetime.utcnow()
-    return datetime.strftime(now, "%Y-%m-%dT%H:%M:%S.000Z")
+    return datetime.strftime(now, "%Y-%m-%dT%H:%M:%S.%fZ")
 
   def stop(self):
     None

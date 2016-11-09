@@ -20,6 +20,7 @@
 ## softwaretype - [text] ie: vws or weatherdisplay
 
 from time import sleep
+import math
 import requests
 import re
 
@@ -39,8 +40,12 @@ class piSender:
             self.maxRetry = config.get('wunderground','retry')
             
     def wuTime(self, inTime):
-        wuT = re.match("(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2}).000Z", inTime)
-        return "%s+%s%%3A%s%%3A%s" % (wuT.group(1, 2, 3, 4))
+        wuT = re.match("(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3,6})Z", inTime)
+        (tDate, tHr, tMn, tSec, tMS) = wuT.group(1, 2, 3, 4, 5)
+        tMMS = "%d.%s" % (int(tSec), tMS)
+        tMMS = int(round(float(tMMS)))
+
+        return "%s+%s%%3A%s%%3A%02d" % (tDate, tHr, tMn, tMMS)
 
     def genReq(self, inTime, data):
         req = "ID=%s&PASSWORD=%s&dateutc=%s&action=updateraw&softwaretype=%s" % \
