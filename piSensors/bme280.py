@@ -46,7 +46,7 @@ class sensor:
 
   def readBME280ID(self, addr=DEVICE):
     # Chip ID Register Address
-    REG_ID     = 0xD0
+    REG_ID     = 0xD0    
     (chip_id, chip_version) = self.bus.read_i2c_block_data(addr, REG_ID, 2)
     return chip_id, chip_version
 
@@ -153,12 +153,15 @@ class sensor:
 
   def getMeasurement(self):
     resp = {}
-    temperature,pressure,humidity,dewpoint = self.readBME280All()
-    resp = { 'tempf': (temperature * 1.8) + 32,
-             'dewptf': (dewpoint * 1.8) + 32,
-             'humidity': humidity,
-             'baromin': (pressure * 0.029529988) }
-    
+    try:
+      temperature,pressure,humidity,dewpoint = self.readBME280All()
+      resp = { 'tempf': (temperature * 1.8) + 32,
+               'dewptf': (dewpoint * 1.8) + 32,
+               'humidity': humidity,
+               'baromin': (pressure * 0.029529988) }
+    except Exception:
+      e = sys.exc_info()[0]
+      
     return resp
     
 def main():
